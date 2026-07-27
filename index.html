@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kingdom Financial Services - Centro de Control - César Larancuent</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --bg-primary: #0a0a0f;
@@ -37,7 +38,35 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg-
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius:3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-dark); }
-.topbar { position:sticky; top:0; z-index:100; backdrop-filter:blur(16px); background:rgba(10,10,15,0.85); border-bottom:1px solid var(--border); padding:0.75rem 2rem; display:flex; align-items:center; justify-content:space-between; }
+
+/* Login */
+#login-screen { position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; }
+.login-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:3rem 2.5rem; width:100%; max-width:420px; text-align:center; backdrop-filter:blur(16px); box-shadow:var(--shadow); }
+.login-card .logo-area { margin-bottom:1.5rem; }
+.login-card .logo-img { height:56px; width:auto; filter:drop-shadow(0 0 12px rgba(212,168,83,0.3)); margin-bottom:0.75rem; }
+.login-card h1 { font-size:1.5rem; letter-spacing:2px; margin-bottom:0.35rem; }
+.login-card h1 span { background:linear-gradient(135deg,var(--gold-bright),var(--gold)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.login-card p.tagline { color:var(--text-muted); font-size:0.82rem; margin-bottom:2rem; }
+.login-card label { display:block; text-align:left; font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.4rem; font-weight:600; }
+.login-card input { width:100%; padding:0.8rem 1rem; border-radius:10px; border:1px solid var(--border); background:var(--bg-surface); color:var(--text-primary); font-size:1rem; outline:none; transition:border-color 0.2s; margin-bottom:1.25rem; }
+.login-card input:focus { border-color:var(--gold); box-shadow:0 0 0 3px rgba(212,168,83,0.1); }
+.login-card .btn-gold { width:100%; padding:0.85rem; border-radius:10px; font-size:1rem; font-weight:700; cursor:pointer; background:linear-gradient(135deg,var(--gold-bright),var(--gold)); color:#000; border:none; transition:all 0.2s; }
+.login-card .btn-gold:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(212,168,83,0.3); }
+.login-card .btn-gold:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+.login-card .msg { margin-top:1rem; padding:0.7rem; border-radius:8px; font-size:0.85rem; }
+.login-card .msg.success { background:rgba(34,197,94,0.1); color:var(--accent-green); border:1px solid rgba(34,197,94,0.2); }
+.login-card .msg.error { background:rgba(239,68,68,0.1); color:var(--accent-red); border:1px solid rgba(239,68,68,0.2); }
+.login-card .msg.info { background:rgba(6,182,212,0.1); color:var(--accent-cyan); border:1px solid rgba(6,182,212,0.2); }
+.login-card .loading { display:inline-block; width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 0.6s linear infinite; margin-right:0.5rem; vertical-align:middle; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Logged-in bar */
+#auth-bar { display:none; position:sticky; top:0; z-index:100; backdrop-filter:blur(16px); background:rgba(10,10,15,0.85); border-bottom:1px solid var(--border); padding:0.75rem 2rem; align-items:center; justify-content:space-between; }
+#auth-bar .user-email { font-size:0.8rem; color:var(--text-muted); }
+#auth-bar .btn-sm { padding:0.3rem 0.7rem; font-size:0.75rem; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--text-secondary); cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+#auth-bar .btn-sm:hover { border-color:var(--gold-dark); color:var(--text-primary); }
+
+.topbar { display:none; position:sticky; top:0; z-index:100; backdrop-filter:blur(16px); background:rgba(10,10,15,0.85); border-bottom:1px solid var(--border); padding:0.75rem 2rem; align-items:center; justify-content:space-between; }
 .topbar-left { display:flex; align-items:center; gap:1.5rem; }
 .logo-area { display:flex; align-items:center; gap:0.75rem; }
 .logo-img { height:40px; width:auto; filter: drop-shadow(0 0 8px rgba(212,168,83,0.3)); }
@@ -51,7 +80,7 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg-
 .btn-secondary { background:rgba(255,255,255,0.04); color:var(--text-secondary); border:1px solid var(--border); }
 .btn-secondary:hover { border-color:var(--gold-dark); color:var(--text-primary); }
 .btn-sm { padding:0.3rem 0.7rem; font-size:0.75rem; }
-.container { position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:2rem; }
+.container { display:none; position:relative; z-index:1; max-width:1400px; margin:0 auto; padding:2rem; }
 .hero { text-align:center; padding:3rem 0 2rem; position:relative; }
 .hero-logo { max-width:280px; height:auto; filter:drop-shadow(0 0 30px rgba(212,168,83,0.2)); margin-bottom:1rem; transition: transform 0.3s; }
 .hero-logo:hover { transform:scale(1.03); }
@@ -116,7 +145,7 @@ body { font-family: 'Segoe UI', -apple-system, sans-serif; background: var(--bg-
 .checklist-item:last-child { border-bottom:none; }
 .check-box { width:20px; height:20px; border:2px solid var(--border-active); border-radius:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; margin-top:2px; }
 .checklist-item.checked .check-box { background:var(--accent-green); border-color:var(--accent-green); }
-.checklist-item.checked .check-box::after { content:'\2713'; color:#fff; font-size:0.7rem; font-weight:800; }
+.checklist-item.checked .check-box::after { content:'\u2713'; color:#fff; font-size:0.7rem; font-weight:800; }
 .checklist-item.checked .check-label { text-decoration:line-through; color:var(--text-muted); }
 .check-label { font-size:0.88rem; line-height:1.5; }
 .branch { margin:1rem 0; padding:1rem 1.25rem; background:var(--bg-surface); border-radius:8px; border-left:3px solid var(--gold); }
@@ -184,8 +213,40 @@ h3 { font-size:1rem; margin-bottom:1rem; color:var(--text-secondary); }
 <!-- Three.js Background -->
 <canvas id="three-bg"></canvas>
 
-<!-- Top Bar -->
-<div class="topbar">
+<!-- Login Screen -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo-area">
+      <img src="logo.png" class="logo-img" alt="KFS" onerror="this.style.display='none'">
+      <h1><span>REINO</span> CRÉDITO</h1>
+      <p class="tagline">Centro de Control</p>
+    </div>
+    <label for="email-input">Tu Correo Electrónico</label>
+    <input type="email" id="email-input" placeholder="tucorreo@ejemplo.com" autocomplete="email" autofocus>
+    <button class="btn-gold" id="login-btn" onclick="handleLogin()">Enviar Código de Acceso</button>
+    <div id="login-msg"></div>
+  </div>
+</div>
+
+<!-- Auth Bar (shown when logged in) -->
+<div id="auth-bar">
+  <div class="topbar-left">
+    <div class="logo-area">
+      <img src="logo.png" class="logo-img" alt="KFS" onerror="this.style.display='none'" style="height:32px">
+      <div class="logo-text">
+        <span class="brand" style="font-size:0.95rem">KINGDOM</span>
+        <span class="sub" style="font-size:0.6rem">Financial Services</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <span class="user-email" id="user-email-display"></span>
+    <button class="btn-sm" onclick="handleLogout()">Cerrar Sesión</button>
+  </div>
+</div>
+
+<!-- Top Bar (dashboard) -->
+<div class="topbar" id="topbar">
   <div class="topbar-left">
     <div class="logo-area">
       <img src="logo.png" class="logo-img" alt="KFS" onerror="this.style.display='none'">
@@ -196,19 +257,28 @@ h3 { font-size:1rem; margin-bottom:1rem; color:var(--text-secondary); }
     </div>
   </div>
   <div class="topbar-right">
-    <button class="btn btn-secondary btn-sm" onclick="exportData()">&#128229; Exportar</button>
-    <button class="btn btn-secondary btn-sm" onclick="importData()">&#128228; Importar</button>
     <button class="btn btn-secondary btn-sm" onclick="window.print()">&#128424; Imprimir</button>
   </div>
 </div>
 
-<!-- Main -->
+<!-- Main Dashboard -->
 <div class="container" id="app"></div>
 
-<!-- Hidden file input for import -->
-<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
-
 <script>
+// ==================== SUPABASE INIT ====================
+const SUPABASE_URL = 'https://rckqjverdckszsrzjkzs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJja3FqdmVyZGNrc3pzcnpqa3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMDc2OTAsImV4cCI6MjEwMDU4MzY5MH0.yDi7NpCiwixH6RT1awWf_uHd4D0Df_UV7wR2-MOui5k';
+const { createClient } = supabase;
+const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ==================== APP STATE ====================
+let appState = {
+  profile: null,
+  checklist: {},
+  letterJobs: [],
+  tracking: [],
+};
+
 // ==================== THREE.JS KINGDOM BACKGROUND ====================
 (function() {
   const canvas = document.getElementById('three-bg');
@@ -263,19 +333,174 @@ h3 { font-size:1rem; margin-bottom:1rem; color:var(--text-secondary); }
   window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
 })();
 
-// ==================== DATABASE ====================
-const DB = {
-  save(key,val){try{localStorage.setItem('kfs_'+key,JSON.stringify(val));}catch(e){console.warn('Storage full');}},
-  load(key,def){try{const v=localStorage.getItem('kfs_'+key);return v?JSON.parse(v):def;}catch(e){return def;}},
-  del(key){localStorage.removeItem('kfs_'+key);}
-};
+// ==================== AUTH ====================
+async function handleLogin() {
+  const btn = document.getElementById('login-btn');
+  const msg = document.getElementById('login-msg');
+  const email = document.getElementById('email-input').value.trim();
+  if (!email) {
+    msg.className = 'msg error';
+    msg.textContent = 'Por favor ingresa tu correo electrónico.';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Enviando...';
+  msg.className = 'msg info';
+  msg.textContent = 'Enviando código de acceso...';
+  try {
+    const { error } = await _supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true }
+    });
+    if (error) throw error;
+    msg.className = 'msg success';
+    msg.innerHTML = '&#9989; Código enviado a <strong>' + email + '</strong>. Revisa tu bandeja de entrada (y spam).';
+    btn.textContent = 'Reenviar Código';
+    btn.disabled = false;
+  } catch (e) {
+    msg.className = 'msg error';
+    msg.textContent = 'Error: ' + (e.message || 'No se pudo enviar el código. Intenta de nuevo.');
+    btn.innerHTML = 'Enviar Código de Acceso';
+    btn.disabled = false;
+  }
+}
 
-// ==================== CLIENT DATA ====================
+async function handleLogout() {
+  await _supabase.auth.signOut();
+  showLogin();
+}
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('auth-bar').style.display = 'none';
+  document.getElementById('topbar').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+}
+
+function showDashboard(email) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('auth-bar').style.display = 'flex';
+  document.getElementById('user-email-display').textContent = email;
+}
+
+// ==================== DATA LOADING ====================
+async function loadDashboardData(email) {
+  try {
+    // Load profile
+    const { data: profiles, error: pe } = await _supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email)
+      .limit(1);
+    if (pe) throw pe;
+    if (!profiles || profiles.length === 0) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').innerHTML = '<div style="text-align:center;padding:6rem 2rem;color:var(--text-secondary)"><h2>No se encontró tu perfil</h2><p>Comunícate con KFS para configurar tu acceso.</p></div>';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('topbar').style.display = 'flex';
+      return;
+    }
+    appState.profile = profiles[0];
+    const profileId = appState.profile.id;
+
+    // Load checklist items
+    const { data: checkItems, error: ce } = await _supabase
+      .from('checklist_items')
+      .select('*')
+      .eq('profile_id', profileId);
+    if (!ce) {
+      appState.checklist = {};
+      checkItems.forEach(item => {
+        appState.checklist[item.item_id] = item.checked;
+      });
+    }
+
+    // Load letter jobs
+    const { data: letters, error: le } = await _supabase
+      .from('letter_jobs')
+      .select('*')
+      .eq('profile_id', profileId)
+      .order('job_num');
+    if (!le) appState.letterJobs = letters || [];
+
+    // Load tracking
+    const { data: tracking, error: te } = await _supabase
+      .from('tracking')
+      .select('*')
+      .eq('profile_id', profileId)
+      .order('letter_num');
+    if (!te) appState.tracking = tracking || [];
+
+    showDashboard(email);
+    document.getElementById('topbar').style.display = 'flex';
+    render();
+  } catch (e) {
+    console.error('Error loading data:', e);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').innerHTML = '<div style="text-align:center;padding:6rem 2rem;color:var(--text-secondary)"><h2>Error al cargar datos</h2><p>' + (e.message || 'Intenta recargar la página.') + '</p></div>';
+    document.getElementById('app').style.display = 'block';
+  }
+}
+
+// ==================== DATA SAVING ====================
+async function saveChecklistItem(itemId, checked) {
+  appState.checklist[itemId] = checked;
+  try {
+    const { error } = await _supabase
+      .from('checklist_items')
+      .upsert({
+        profile_id: appState.profile.id,
+        item_id: itemId,
+        checked: checked
+      }, { onConflict: 'profile_id,item_id' });
+    if (error) console.warn('Save checklist error:', error);
+  } catch(e) { console.warn('Save error:', e); }
+  render();
+}
+
+async function saveLetterJob(jobNum, status) {
+  try {
+    const existing = appState.letterJobs.find(j => j.job_num === jobNum);
+    if (existing) {
+      const { error } = await _supabase
+        .from('letter_jobs')
+        .update({ status })
+        .eq('id', existing.id);
+      if (!error) existing.status = status;
+    }
+  } catch(e) { console.warn('Save letter error:', e); }
+}
+
+async function saveTracking(letterNum, field, value) {
+  try {
+    let existing = appState.tracking.find(t => t.letter_num === letterNum);
+    if (existing) {
+      existing[field] = value;
+      const { error } = await _supabase
+        .from('tracking')
+        .update({ [field]: value })
+        .eq('id', existing.id);
+      if (error) console.warn('Update tracking error:', error);
+    } else {
+      const { data, error } = await _supabase
+        .from('tracking')
+        .insert({
+          profile_id: appState.profile.id,
+          letter_num: letterNum,
+          [field]: value
+        })
+        .select();
+      if (!error && data && data[0]) appState.tracking.push(data[0]);
+    }
+  } catch(e) { console.warn('Save tracking error:', e); }
+}
+
+// ==================== TEMPLATES ====================
 const TEMPLATE_PHASES = [
   {
-    id:"prep", title:"Preparaci\u00f3n y Recolecci\u00f3n de Documentos", subtitle:"Ten todo listo antes de enviar por correo", checklist:[
-      {id:"prep-1",label:"Copias de tu identificaci\u00f3n con foto (licencia o pasaporte)"},
-      {id:"prep-2",label:"Copia de recibo de servicios o estado de cuenta bancario (prueba de domicilio, menos de 30 d\u00edas)"},
+    id:"prep", title:"Preparación y Recolección de Documentos", subtitle:"Ten todo listo antes de enviar por correo", checklist:[
+      {id:"prep-1",label:"Copias de tu identificación con foto (licencia o pasaporte)"},
+      {id:"prep-2",label:"Copia de recibo de servicios o estado de cuenta bancario (prueba de domicilio, menos de 30 días)"},
       {id:"prep-3",label:"Imprimir cada carta de disputa PDF (ya generadas)"},
       {id:"prep-4",label:"FIRMAR cada carta personalmente"},
       {id:"prep-5",label:"Adjuntar con CADA carta: copia de ID + prueba de domicilio"},
@@ -286,125 +511,86 @@ const TEMPLATE_PHASES = [
     id:"send", title:"Enviar Cartas de Disputa por Correo Certificado", subtitle:"Certified Mail con acuse de recibo", checklist:[
       {id:"send-1",label:"Enviar cada carta por correo certificado (Certified Mail con Return Receipt)"},
       {id:"send-2",label:"Usar LetterStream letterstream.com ~$12/carta o ir al correo directamente"},
-      {id:"send-3",label:"Guardar TODOS los n\u00fameros de seguimiento / tracking"},
+      {id:"send-3",label:"Guardar TODOS los números de seguimiento / tracking"},
       {id:"send-4",label:"Anotar tracking en la tabla de seguimiento abajo"},
-      {id:"send-5",label:"Poner recordatorio en el calendario: 35 d\u00edas desde el env\u00edo (esperar respuesta)"}
+      {id:"send-5",label:"Poner recordatorio en el calendario: 35 días desde el envío (esperar respuesta)"}
     ]
   },
   {
-    id:"track", title:"Seguimiento y Respuesta de las Agencias", subtitle:"Monitorear entrega + esperar 30 d\u00edas de investigaci\u00f3n", checklist:[
+    id:"track", title:"Seguimiento y Respuesta de las Agencias", subtitle:"Monitorear entrega + esperar 30 días de investigación", checklist:[
       {id:"track-1",label:"Confirmar que todas las cartas fueron entregadas (USPS tracking)"},
-      {id:"track-2",label:"Esperar 30 d\u00edas desde la entrega confirmada para recibir respuesta"},
+      {id:"track-2",label:"Esperar 30 días desde la entrega confirmada para recibir respuesta"},
       {id:"track-3",label:"Abrir cada respuesta de las agencias cuando llegue"},
       {id:"track-4",label:"Anotar resultado: Eliminado / Verificado / Sin Respuesta"},
       {id:"track-5",label:"SI eliminaron: Pedir reporte nuevo para confirmar"},
-      {id:"track-6",label:"SI verificaron: Ir a Fase 4 (M\u00e9todo de Verificaci\u00f3n - MOV)"},
-      {id:"track-7",label:"SI no respondieron: Enviar carta de 'Falta de Investigaci\u00f3n'"}
+      {id:"track-6",label:"SI verificaron: Ir a Fase 4 (Método de Verificación - MOV)"},
+      {id:"track-7",label:"SI no respondieron: Enviar carta de 'Falta de Investigación'"}
     ]
   },
   {
-    id:"mov", title:"M\u00e9todo de Verificaci\u00f3n (MOV)", subtitle:"Obligar a las agencias a explicar C\u00d3MO verificaron", checklist:[
+    id:"mov", title:"Método de Verificación (MOV)", subtitle:"Obligar a las agencias a explicar CÓMO verificaron", checklist:[
       {id:"mov-1",label:"Redactar carta MOV para cada cuenta verificada (no eliminada)"},
-      {id:"mov-2",label:"Preguntar: QU\u00c9 procedimiento usaron, QUI\u00c9N contactaron, QU\u00c9 documentos revisaron"},
+      {id:"mov-2",label:"Preguntar: QUÉ procedimiento usaron, QUIÉN contactaron, QUÉ documentos revisaron"},
       {id:"mov-3",label:"Enviar cartas MOV por correo certificado"},
       {id:"mov-4",label:"SI responden vago ('e-OSCAR'): Escalar a Fase 5"},
       {id:"mov-5",label:"SI dan detalles: Revisar por errores, enviar 2da disputa dirigida"}
     ]
   },
   {
-    id:"escalate", title:"Escalaci\u00f3n Directa + CFPB", subtitle:"Atacar desde el otro lado + presi\u00f3n regulatoria", checklist:[
-      {id:"esc-1",label:"Llamar al cobrador directamente - exigir correcci\u00f3n/eliminaci\u00f3n"},
-      {id:"esc-2",label:"Exigir validaci\u00f3n de deuda bajo FDCPA Secci\u00f3n 809 (solo cobranzas)"},
+    id:"escalate", title:"Escalación Directa + CFPB", subtitle:"Atacar desde el otro lado + presión regulatoria", checklist:[
+      {id:"esc-1",label:"Llamar al cobrador directamente - exigir corrección/eliminación"},
+      {id:"esc-2",label:"Exigir validación de deuda bajo FDCPA Sección 809 (solo cobranzas)"},
       {id:"esc-3",label:"Presentar queja CFPB en consumerfinance.gov/complaint"},
       {id:"esc-4",label:"Enviar carta de disputa directa al 'furnisher' (FCRA 1681s-2) por correo certificado"},
-      {id:"esc-5",label:"Negociar pago-por-eliminaci\u00f3n si es necesario (30-50% del balance)"},
-      {id:"esc-6",label:"Si no se resuelve en 90 d\u00edas: consultar abogado FCRA"}
+      {id:"esc-5",label:"Negociar pago-por-eliminación si es necesario (30-50% del balance)"},
+      {id:"esc-6",label:"Si no se resuelve en 90 días: consultar abogado FCRA"}
     ]
   },
   {
-    id:"maintain", title:"Mantenimiento y Construcci\u00f3n de Puntaje", subtitle:"Mantener lo positivo, monitorear re-reportes", checklist:[
-      {id:"maint-1",label:"Poner pagos autom\u00e1ticos en TODAS las cuentas positivas"},
-      {id:"maint-2",label:"Revisar TransUnion v\u00eda Credit Karma mensualmente (gratis)"},
-      {id:"maint-3",label:"Revisar LOS 3 bur\u00f3s en AnnualCreditReport.com cada 4 meses"},
-      {id:"maint-4",label:"Vigilar reaparici\u00f3n de cuentas eliminadas (enviar carta de reinserci\u00f3n)"},
+    id:"maintain", title:"Mantenimiento y Construcción de Puntaje", subtitle:"Mantener lo positivo, monitorear re-reportes", checklist:[
+      {id:"maint-1",label:"Poner pagos automáticos en TODAS las cuentas positivas"},
+      {id:"maint-2",label:"Revisar TransUnion vía Credit Karma mensualmente (gratis)"},
+      {id:"maint-3",label:"Revisar LOS 3 burós en AnnualCreditReport.com cada 4 meses"},
+      {id:"maint-4",label:"Vigilar reaparición de cuentas eliminadas (enviar carta de reinserción)"},
       {id:"maint-5",label:"Considerar tarjeta asegurada (secured card) que reporte como bankcard"}
     ]
   }
 ];
 
-const DATA = {
-  name:"C\u00c9SAR LARANCUENT",
-  address:"340 CHESTNUT ST APT 2, KEARNY, NJ 07032",
-  reportDate:"2026-06-02",
-  scores:{tu:535,ex:534,efx:571},
-  targetScore:680,
-  negatives:[
-    {id:"lvnv1",creditor:"LVNV Funding / Credit One Bank",account:"$1,088",type:"Cobranza / Charge-Off",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"\u00daltima actividad var\u00eda 4 a\u00f1os entre bur\u00f3s (re-aging). Status 'Open' en EFX vs 'Charge Off' en TU/EX. 100% pagos a tiempo en EX pero est\u00e1 en cobranza. Exigir MOV + FCRA 1681c(c).",impact:"+30 a +50 pts",letters:["02_Furnisher_LVNV_Funding.pdf","01_Bureau_TransUnion_MOV_Demand.pdf","01_Bureau_Experian_MOV_Demand.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}},
-    {id:"lvnv2",creditor:"LVNV Funding / Capital One Platinum",account:"$645",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Fecha actividad EFX (May 2022) PRECEDE a apertura de cuenta (Dec 2022). Status variable entre bur\u00f3s. Misma cuenta reportada diferente = prueba de reporte poco confiable. FDCPA 809 + FCRA 623.",impact:"+20 a +35 pts",letters:["02_Furnisher_LVNV_Funding.pdf","01_Bureau_TransUnion_MOV_Demand.pdf","01_Bureau_Experian_MOV_Demand.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}},
-    {id:"midland1",creditor:"Midland Credit / Comenity Bank",account:"$888",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"\u00daltima actividad EFX (Apr 2022) PRECEDE apertura (Dec 2022). Status 'Open' EFX vs 'Charge Off' TU/EX. Falta acreedor original en EFX. Contradicciones factuales = eliminaci\u00f3n.",impact:"+15 a +30 pts",letters:["03_Furnisher_Midland_Credit.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}},
-    {id:"midland2",creditor:"Midland Credit / Comenity Capital",account:"$433",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Fecha actividad EFX (Sep 2022) PRECEDE apertura (Mar 2023). Status variable entre bur\u00f3s. Mismo patr\u00f3n de contradicciones. F\u00e1cil de eliminar si se\u00f1alamos las inconsistencias.",impact:"+10 a +20 pts",letters:["03_Furnisher_Midland_Credit.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}},
-    {id:"swcredit",creditor:"SW Credit Systems / Comcast",account:"$866",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"EFX no muestra nombre de agencia ni acreedor original. Deuda no crediticia (Comcast) = documentaci\u00f3n m\u00e1s d\u00e9bil. Validaci\u00f3n FDCPA 809 + reporte inexacto. De las m\u00e1s f\u00e1ciles de eliminar.",impact:"+15 a +25 pts",letters:["04_Furnisher_Southwest_Credit.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}},
-    {id:"springoaks",creditor:"Spring Oaks Capital / Celtic Bank",account:"$634",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"\u00daltima actividad EFX (Mar 2020) PRECEDE apertura por 16 MESES (Jul 2021). Esto es imposible - evidencia m\u00e1s fuerte del reporte. FCRA 1681e(b) + 1681i. Debe ser eliminado.",impact:"+15 a +25 pts",letters:["05_Furnisher_Spring_Oaks.pdf","01_Bureau_Equifax_MOV_Demand.pdf","01_Bureau_TransUnion_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}},
-    {id:"caine",creditor:"Caine & Weiner / Progressive",account:"$398",type:"Cobranza",rating:"9",bureaus:["Experian","Equifax"],lates:"N/A",strategy:"$398 reportado como Charge Off en EX, 'Open' en EFX. Solo 2 bur\u00f3s. Deuda de seguro = no crediticia. M\u00ednima documentaci\u00f3n. La m\u00e1s f\u00e1cil del paquete.",impact:"+10 a +15 pts",letters:["06_Furnisher_Caine_Weiner.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{ex:"pending",efx:"pending"}},
-    {id:"bofa",creditor:"Bank of America",account:"$538 ($500 l\u00edmite)",type:"Charge-Off",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"TU: 0/0/0 vs EFX: 1/1/47",strategy:"MISMA cuenta: TU dice 0/0/0 atrasos, EFX dice 1/1/47 atrasos. 108% utilizaci\u00f3n en cuenta cerrada. Contradicci\u00f3n m\u00e1s absurda del reporte. Si sobrevive: pago-por-eliminaci\u00f3n.",impact:"+20 a +40 pts",letters:["07_Furnisher_Bank_of_America.pdf","01_Bureau_TransUnion_MOV_Demand.pdf","01_Bureau_Equifax_MOV_Demand.pdf"],result:{tu:"pending",ex:"pending",efx:"pending"}}
-  ],
-  letterStreamJobs:[
-    {num:1,target:"Equifax MOV - 9 items",status:"draft"},
-    {num:2,target:"Experian MOV - 10 items",status:"draft"},
-    {num:3,target:"TransUnion MOV - 8 items",status:"draft"},
-    {num:4,target:"LVNV Funding ($1,088 + $645)",status:"draft"},
-    {num:5,target:"Midland Credit ($888 + $433)",status:"draft"},
-    {num:6,target:"Southwest Credit / Comcast ($866)",status:"draft"},
-    {num:7,target:"Spring Oaks Capital ($634)",status:"draft"},
-    {num:8,target:"Caine & Weiner ($398)",status:"draft"},
-    {num:9,target:"Bank of America ($538)",status:"draft"}
-  ],
-  tracking:[
-    {letter:"01",desc:"Equifax MOV"},
-    {letter:"02",desc:"Experian MOV"},
-    {letter:"03",desc:"TransUnion MOV"},
-    {letter:"04",desc:"LVNV Funding"},
-    {letter:"05",desc:"Midland Credit"},
-    {letter:"06",desc:"SW Credit / Comcast"},
-    {letter:"07",desc:"Spring Oaks"},
-    {letter:"08",desc:"Caine & Weiner"},
-    {letter:"09",desc:"Bank of America"}
-  ]
-};
-
 // ==================== RENDER ====================
 function render() {
-  const c = DATA;
-  const phases = c.phases || TEMPLATE_PHASES;
+  const c = appState.profile;
+  if (!c) return;
+  const phases = TEMPLATE_PHASES;
   const totalChecks = phases.reduce((a,p)=>a+p.checklist.length,0);
-  const doneChecks = phases.reduce((a,p)=>a+p.checklist.filter(i=>DB.load(i.id,false)).length,0);
+  const doneChecks = phases.reduce((a,p)=>a+p.checklist.filter(i=>appState.checklist[i.id]).length,0);
   const pct = totalChecks ? Math.round((doneChecks/totalChecks)*100) : 0;
-  const activeIdx = phases.findIndex(p=>p.checklist.some(i=>!DB.load(i.id,false)));
+  const activeIdx = phases.findIndex(p=>p.checklist.some(i=>!appState.checklist[i.id]));
 
   document.getElementById('app').innerHTML = `
     <div class="hero">
       <img src="logo.png" class="hero-logo" alt="Kingdom Financial Services" onerror="this.style.display='none'">
-      <h1><span>REINO</span> CR\u00c9DITO</h1>
-      <p class="tagline">Centro de Control &mdash; ${c.name} &mdash; Reporte: ${c.reportDate}</p>
-      <p style="color:var(--text-muted);font-size:0.82rem;margin-top:0.3rem">340 Chestnut St Apt 2, Kearny, NJ 07032</p>
+      <h1><span>REINO</span> CRÉDITO</h1>
+      <p class="tagline">Centro de Control &mdash; ${c.name} &mdash; Reporte: ${c.report_date}</p>
+      <p style="color:var(--text-muted);font-size:0.82rem;margin-top:0.3rem">${c.address}</p>
     </div>
 
     <div class="score-row">
-      <div class="score-card tu"><div class="bureau">TransUnion</div><div class="value">${c.scores.tu}</div><div class="label">VantageScore 3.0</div></div>
-      <div class="score-card ex"><div class="bureau">Experian</div><div class="value">${c.scores.ex}</div><div class="label">VantageScore 3.0</div></div>
-      <div class="score-card efx"><div class="bureau">Equifax</div><div class="value">${c.scores.efx}</div><div class="label">VantageScore 3.0</div></div>
-      <div class="score-card target"><div class="bureau">Meta</div><div class="value">${c.targetScore}</div><div class="label">Puntaje Objetivo</div></div>
+      <div class="score-card tu"><div class="bureau">TransUnion</div><div class="value">${c.tu_score}</div><div class="label">VantageScore 3.0</div></div>
+      <div class="score-card ex"><div class="bureau">Experian</div><div class="value">${c.ex_score}</div><div class="label">VantageScore 3.0</div></div>
+      <div class="score-card efx"><div class="bureau">Equifax</div><div class="value">${c.efx_score}</div><div class="label">VantageScore 3.0</div></div>
+      <div class="score-card target"><div class="bureau">Meta</div><div class="value">${c.target_score}</div><div class="label">Puntaje Objetivo</div></div>
     </div>
 
     <div class="progress-container">
       <div class="progress-header">
-        <span class="progress-title">Progreso de la Campa\u00f1a</span>
+        <span class="progress-title">Progreso de la Campaña</span>
         <span class="progress-pct">${pct}%</span>
       </div>
       <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${pct}%"></div></div>
       <div class="progress-stats">
         <span class="progress-stat"><strong>${doneChecks}</strong> de ${totalChecks} pasos completados</span>
-        <span class="progress-stat"><strong>${c.negatives.length}</strong> items negativos atacados</span>
+        <span class="progress-stat"><strong>8</strong> items negativos atacados</span>
         <span class="progress-stat"><strong>${pct>=100?'Completado':'Fase '+(activeIdx+1>0?activeIdx+1:1)+' activa'}</strong></span>
       </div>
     </div>
@@ -415,25 +601,26 @@ function render() {
       <button class="tab" onclick="switchTab('letterstream',this)">&#9993; Cartas</button>
       <button class="tab" onclick="switchTab('tracking',this)">&#128228; Tracking</button>
       <button class="tab" onclick="switchTab('decisions',this)">&#10068; Decisiones</button>
-      <button class="tab" onclick="switchTab('analysis',this)">&#128200; An\u00e1lisis</button>
+      <button class="tab" onclick="switchTab('analysis',this)">&#128200; Análisis</button>
     </div>
 
     <div class="tab-content active" id="tab-phases">
-      <h2><span class="icon">&#9881;</span> Plan de Acci\u00f3n</h2>
+      <h2><span class="icon">&#9881;</span> Plan de Acción</h2>
       <div class="phase-list">
         ${phases.map((phase,pi)=>{
-          const phaseDone = phase.checklist.filter(i=>DB.load(i.id,false)).length;
+          const phaseDone = phase.checklist.filter(i=>appState.checklist[i.id]).length;
           const isComplete = phaseDone===phase.checklist.length;
           const isActive = pi===activeIdx;
           const status = isComplete?'completed':(isActive?'active':'pending');
-          return `<div class="phase-card ${status} ${DB.load('expand-'+phase.id,false)?'expanded':''}" id="phase-${phase.id}">
+          const expanded = appState.checklist['_expand_'+phase.id] || false;
+          return `<div class="phase-card ${status} ${expanded?'expanded':''}" id="phase-${phase.id}">
             <div class="phase-header" onclick="togglePhase('${phase.id}')">
               <div class="phase-indicator ${status}">${isComplete?'&#10003;':pi+1}</div>
               <div class="phase-info"><div class="phase-title">${phase.title}</div><div class="phase-subtitle">${phase.subtitle} &mdash; ${phaseDone}/${phase.checklist.length}</div></div>
               <span class="phase-chevron">&#9662;</span>
             </div>
             <div class="phase-body"><ul class="checklist">${phase.checklist.map(item=>`
-              <li class="checklist-item ${DB.load(item.id,false)?'checked':''}" onclick="toggleCheck('${item.id}')">
+              <li class="checklist-item ${appState.checklist[item.id]?'checked':''}" onclick="toggleCheck('${item.id}')">
                 <div class="check-box"></div><span class="check-label">${item.label}</span>
               </li>`).join('')}</ul>
             </div>
@@ -444,13 +631,13 @@ function render() {
 
     <div class="tab-content" id="tab-negatives">
       <h2><span class="icon">&#9888;</span> Items Negativos Atacados</h2>
-      <p class="section-subtitle">8 cuentas negativas en total &mdash; cada una con evidencia s\u00f3lida de inexactitudes</p>
+      <p class="section-subtitle">8 cuentas negativas en total &mdash; cada una con evidencia sólida de inexactitudes</p>
       <div class="tradeline-grid">
-        ${c.negatives.map(n=>`<div class="tradeline-card negative">
+        ${NEGATIVES.map(n=>`<div class="tradeline-card negative">
           <div class="tl-top"><span class="tl-name">${n.creditor}</span><span class="tl-badge badge-red">${n.amount}</span></div>
           <div class="tl-details">
             <strong>Tipo:</strong> ${n.type}<br>
-            <strong>Bur\u00f3s:</strong> ${n.bureaus.join(', ')}<br>
+            <strong>Burós:</strong> ${n.bureaus.join(', ')}<br>
             <strong>Atrasos:</strong> ${n.lates}<br>
             <strong>Estrategia:</strong> ${n.strategy}<br>
             <strong>Impacto estimado:</strong> ${n.impact}<br>
@@ -466,41 +653,48 @@ function render() {
       <div class="lsw-steps">
         <div class="lsw-step"><div class="lsw-step-num">1</div><div class="lsw-step-label">Imprimir</div></div>
         <div class="lsw-step"><div class="lsw-step-num">2</div><div class="lsw-step-label">Firmar</div></div>
-        <div class="lsw-step"><div class="lsw-step-num">3</div><div class="lsw-step-label">Adjuntar ID + Direcci\u00f3n</div></div>
+        <div class="lsw-step"><div class="lsw-step-num">3</div><div class="lsw-step-label">Adjuntar ID + Dirección</div></div>
         <div class="lsw-step"><div class="lsw-step-num">4</div><div class="lsw-step-label">Correo Certificado</div></div>
-        <div class="lsw-step"><div class="lsw-step-num">5</div><div class="lsw-step-label">Rastrear &amp; Esperar 30 d\u00edas</div></div>
+        <div class="lsw-step"><div class="lsw-step-num">5</div><div class="lsw-step-label">Rastrear &amp; Esperar 30 días</div></div>
       </div>
       <h3 style="margin-top:2rem">Estado de las Cartas</h3>
-      ${c.letterStreamJobs.map(j=>`<div class="lsw-card" style="padding:1rem 1.25rem"><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:0.75rem"><span style="background:var(--bg-surface);padding:0.3rem 0.7rem;border-radius:6px;font-weight:800;font-size:0.82rem;color:var(--gold)">#${j.num}</span><span style="font-weight:600">${j.target}</span></div><div style="display:flex;align-items:center;gap:0.5rem"><span class="lsw-status ${DB.load('lsw-'+j.num,'draft')}">${DB.load('lsw-'+j.num,'draft').toUpperCase()}</span><select onchange="updateLSW(${j.num},this.value)" style="background:var(--bg-surface);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.4rem;font-size:0.75rem"><option value="draft"${DB.load('lsw-'+j.num,'draft')==='draft'?' selected':''}>Borrador</option><option value="sending"${DB.load('lsw-'+j.num,'draft')==='sending'?' selected':''}>Enviando</option><option value="sent"${DB.load('lsw-'+j.num,'draft')==='sent'?' selected':''}>Enviado</option></select></div></div></div>`).join('')}
+      ${LETTER_JOBS.map(j=>{
+        const lj = appState.letterJobs.find(l=>l.job_num===j.num);
+        const st = lj ? lj.status : 'draft';
+        return `<div class="lsw-card" style="padding:1rem 1.25rem"><div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:0.75rem"><span style="background:var(--bg-surface);padding:0.3rem 0.7rem;border-radius:6px;font-weight:800;font-size:0.82rem;color:var(--gold)">#${j.num}</span><span style="font-weight:600">${j.target}</span></div><div style="display:flex;align-items:center;gap:0.5rem"><span class="lsw-status ${st}">${st.toUpperCase()}</span><select onchange="updateLSW(${j.num},this.value)" style="background:var(--bg-surface);border:1px solid var(--border);color:var(--text-primary);border-radius:5px;padding:0.2rem 0.4rem;font-size:0.75rem"><option value="draft"${st==='draft'?' selected':''}>Borrador</option><option value="sending"${st==='sending'?' selected':''}>Enviando</option><option value="sent"${st==='sent'?' selected':''}>Enviado</option></select></div></div></div>`;
+      }).join('')}
     </div>
 
     <div class="tab-content" id="tab-tracking">
       <h2><span class="icon">&#128228;</span> Seguimiento de Correo Certificado</h2>
       <table class="data-table"><thead><tr><th>#</th><th>Carta</th><th>Tracking #</th><th>Enviado</th><th>Recibido</th><th>Resultado</th></tr></thead><tbody>
-        ${c.tracking.map(t=>`<tr>
-          <td>${t.letter}</td><td>${t.desc}</td>
-          <td><input value="${DB.load('trk-'+t.letter+'-cert','')}" onchange="updateTrk('${t.letter}','cert',this.value)" placeholder="N\u00famero de rastreo"></td>
-          <td><input value="${DB.load('trk-'+t.letter+'-sent','')}" onchange="updateTrk('${t.letter}','sent',this.value)" placeholder="M/D"></td>
-          <td><input value="${DB.load('trk-'+t.letter+'-recv','')}" onchange="updateTrk('${t.letter}','recv',this.value)" placeholder="M/D"></td>
-          <td><select onchange="updateTrk('${t.letter}','result',this.value)"><option value="">--</option><option value="Eliminado"${DB.load('trk-'+t.letter+'-result','')==='Eliminado'?' selected':''}>Eliminado</option><option value="Actualizado"${DB.load('trk-'+t.letter+'-result','')==='Actualizado'?' selected':''}>Actualizado</option><option value="Verificado"${DB.load('trk-'+t.letter+'-result','')==='Verificado'?' selected':''}>Verificado</option><option value="Sin Respuesta"${DB.load('trk-'+t.letter+'-result','')==='Sin Respuesta'?' selected':''}>Sin Respuesta</option></select></td>
-        </tr>`).join('')}
+        ${TRACKING_TEMPLATE.map(t=>{
+          const tr = appState.tracking.find(x=>x.letter_num===t.letter);
+          return `<tr>
+            <td>${t.letter}</td><td>${t.desc}</td>
+            <td><input value="${tr?tr.tracking_no||'':''}" onchange="updateTrk('${t.letter}','tracking_no',this.value)" placeholder="Número de rastreo"></td>
+            <td><input value="${tr?tr.sent_date||'':''}" onchange="updateTrk('${t.letter}','sent_date',this.value)" placeholder="M/D"></td>
+            <td><input value="${tr?tr.received_date||'':''}" onchange="updateTrk('${t.letter}','received_date',this.value)" placeholder="M/D"></td>
+            <td><select onchange="updateTrk('${t.letter}','result',this.value)"><option value="">--</option><option value="Eliminado"${tr&&tr.result==='Eliminado'?' selected':''}>Eliminado</option><option value="Actualizado"${tr&&tr.result==='Actualizado'?' selected':''}>Actualizado</option><option value="Verificado"${tr&&tr.result==='Verificado'?' selected':''}>Verificado</option><option value="Sin Respuesta"${tr&&tr.result==='Sin Respuesta'?' selected':''}>Sin Respuesta</option></select></td>
+          </tr>`;
+        }).join('')}
       </tbody></table>
     </div>
 
     <div class="tab-content" id="tab-decisions">
-      <h2><span class="icon">&#10068;</span> "\u00bfQu\u00e9 Hago Si...?" &Aacute;rbol de Decisiones</h2>
-      <p class="section-subtitle">Haz clic en cualquier escenario para ver tu pr\u00f3ximo paso.</p>
+      <h2><span class="icon">&#10068;</span> "¿Qué Hago Si...?" Árbol de Decisiones</h2>
+      <p class="section-subtitle">Haz clic en cualquier escenario para ver tu próximo paso.</p>
       <div class="decision-tree-container" id="decisionTree"></div>
     </div>
 
     <div class="tab-content" id="tab-analysis">
-      <h2><span class="icon">&#128200;</span> An\u00e1lisis de Impacto</h2>
-      <table class="data-table"><thead><tr><th>Acci\u00f3n</th><th>Ganancia Est.</th><th>Bur\u00f3s</th><th>Dificultad</th></tr></thead><tbody>
+      <h2><span class="icon">&#128200;</span> Análisis de Impacto</h2>
+      <table class="data-table"><thead><tr><th>Acción</th><th>Ganancia Est.</th><th>Burós</th><th>Dificultad</th></tr></thead><tbody>
         <tr><td>Eliminar LVNV Funding ($1,088 + $645)</td><td>+35 a +60</td><td>3</td><td style="color:var(--accent-orange)">Media</td></tr>
         <tr><td>Eliminar Midland Credit ($888 + $433)</td><td>+20 a +40</td><td>3</td><td style="color:var(--accent-orange)">Media</td></tr>
-        <tr><td>Eliminar SW Credit / Comcast ($866)</td><td>+15 a +25</td><td>3</td><td style="color:var(--accent-green)">F\u00e1cil</td></tr>
-        <tr><td>Eliminar Spring Oaks ($634 - fecha imposible)</td><td>+15 a +25</td><td>3</td><td style="color:var(--accent-green)">F\u00e1cil</td></tr>
-        <tr><td>Eliminar Caine &amp; Weiner ($398)</td><td>+10 a +15</td><td>2</td><td style="color:var(--accent-green)">F\u00e1cil</td></tr>
+        <tr><td>Eliminar SW Credit / Comcast ($866)</td><td>+15 a +25</td><td>3</td><td style="color:var(--accent-green)">Fácil</td></tr>
+        <tr><td>Eliminar Spring Oaks ($634 - fecha imposible)</td><td>+15 a +25</td><td>3</td><td style="color:var(--accent-green)">Fácil</td></tr>
+        <tr><td>Eliminar Caine &amp; Weiner ($398)</td><td>+10 a +15</td><td>2</td><td style="color:var(--accent-green)">Fácil</td></tr>
         <tr><td>Eliminar BofA charge-off ($538)</td><td>+20 a +40</td><td>3</td><td style="color:var(--accent-orange)">Media</td></tr>
         <tr><td style="font-weight:700">Total potencial</td><td style="font-weight:700;color:var(--accent-green)">+115 a +205</td><td></td><td></td></tr>
       </tbody></table>
@@ -508,14 +702,14 @@ function render() {
         <p style="line-height:2">
         &bull; "Demasiadas cuentas negativas" &rarr; <strong>SE SOLUCIONA eliminando 7 cobranzas + 1 charge-off</strong><br>
         &bull; "Balances negativos muy altos" &rarr; <strong>SE SOLUCIONA: ~$5,000 eliminado</strong><br>
-        &bull; "Sin cuentas de cr\u00e9dito abiertas" &rarr; Considerar tarjeta asegurada (secured card)<br>
+        &bull; "Sin cuentas de crédito abiertas" &rarr; Considerar tarjeta asegurada (secured card)<br>
         &bull; "Demasiadas cuentas revolving en estado negativo" &rarr; Se soluciona al eliminar charge-offs<br>
         &bull; "Primera cuenta muy reciente" &rarr; Mejora con el tiempo naturalmente
         </p>
       </div>
-      <div class="branch success"><div class="branch-label">Evidencia M\u00e1s Fuerte del Reporte</div>
+      <div class="branch success"><div class="branch-label">Evidencia Más Fuerte del Reporte</div>
         <p style="line-height:2">
-        &bull; <strong>Fechas imposibles:</strong> \u00daltima actividad en EFX PRECEDE la apertura de cuenta en 4 cuentas (Spring Oaks por 16 meses)<br>
+        &bull; <strong>Fechas imposibles:</strong> Última actividad en EFX PRECEDE la apertura de cuenta en 4 cuentas (Spring Oaks por 16 meses)<br>
         &bull; <strong>Re-aging:</strong> TU muestra actividad en Mayo 2026 en deudas que no han tenido actividad desde 2021-22<br>
         &bull; <strong>Status dividido:</strong> Las 7 cobranzas aparecen "Open" en EFX pero "Charge Off" en TU/EX<br>
         &bull; <strong>BofA absurdo:</strong> 0/0/0 atrasos en TU vs 1/1/47 en EFX para la MISMA cuenta<br>
@@ -527,18 +721,54 @@ function render() {
   renderDecisionTree();
 }
 
+// ==================== NEGATIVES DATA ====================
+const NEGATIVES = [
+  {id:"lvnv1",creditor:"LVNV Funding / Credit One Bank",amount:"$1,088",type:"Cobranza / Charge-Off",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Última actividad varía 4 años entre burós (re-aging). Status 'Open' en EFX vs 'Charge Off' en TU/EX. 100% pagos a tiempo en EX pero está en cobranza. Exigir MOV + FCRA 1681c(c).",impact:"+30 a +50 pts",letters:["02_Furnisher_LVNV_Funding.pdf","01_Bureau_TransUnion_MOV_Demand.pdf","01_Bureau_Experian_MOV_Demand.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]},
+  {id:"lvnv2",creditor:"LVNV Funding / Capital One Platinum",amount:"$645",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Fecha actividad EFX (May 2022) PRECEDE a apertura de cuenta (Dec 2022). Status variable entre burós. Misma cuenta reportada diferente = prueba de reporte poco confiable. FDCPA 809 + FCRA 623.",impact:"+20 a +35 pts",letters:["02_Furnisher_LVNV_Funding.pdf","01_Bureau_TransUnion_MOV_Demand.pdf","01_Bureau_Experian_MOV_Demand.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]},
+  {id:"midland1",creditor:"Midland Credit / Comenity Bank",amount:"$888",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Última actividad EFX (Apr 2022) PRECEDE apertura (Dec 2022). Status 'Open' EFX vs 'Charge Off' TU/EX. Falta acreedor original en EFX. Contradicciones factuales = eliminación.",impact:"+15 a +30 pts",letters:["03_Furnisher_Midland_Credit.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]},
+  {id:"midland2",creditor:"Midland Credit / Comenity Capital",amount:"$433",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Fecha actividad EFX (Sep 2022) PRECEDE apertura (Mar 2023). Status variable entre burós. Mismo patrón de contradicciones. Fácil de eliminar si señalamos las inconsistencias.",impact:"+10 a +20 pts",letters:["03_Furnisher_Midland_Credit.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]},
+  {id:"swcredit",creditor:"SW Credit Systems / Comcast",amount:"$866",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"EFX no muestra nombre de agencia ni acreedor original. Deuda no crediticia (Comcast) = documentación más débil. Validación FDCPA 809 + reporte inexacto. De las más fáciles de eliminar.",impact:"+15 a +25 pts",letters:["04_Furnisher_Southwest_Credit.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]},
+  {id:"springoaks",creditor:"Spring Oaks Capital / Celtic Bank",amount:"$634",type:"Cobranza",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"N/A",strategy:"Última actividad EFX (Mar 2020) PRECEDE apertura por 16 MESES (Jul 2021). Esto es imposible - evidencia más fuerte del reporte. FCRA 1681e(b) + 1681i. Debe ser eliminado.",impact:"+15 a +25 pts",letters:["05_Furnisher_Spring_Oaks.pdf","01_Bureau_Equifax_MOV_Demand.pdf","01_Bureau_TransUnion_MOV_Demand.pdf"]},
+  {id:"caine",creditor:"Caine & Weiner / Progressive",amount:"$398",type:"Cobranza",rating:"9",bureaus:["Experian","Equifax"],lates:"N/A",strategy:"$398 reportado como Charge Off en EX, 'Open' en EFX. Solo 2 burós. Deuda de seguro = no crediticia. Mínima documentación. La más fácil del paquete.",impact:"+10 a +15 pts",letters:["06_Furnisher_Caine_Weiner.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]},
+  {id:"bofa",creditor:"Bank of America",amount:"$538 ($500 límite)",type:"Charge-Off",rating:"9",bureaus:["TransUnion","Experian","Equifax"],lates:"TU: 0/0/0 vs EFX: 1/1/47",strategy:"MISMA cuenta: TU dice 0/0/0 atrasos, EFX dice 1/1/47 atrasos. 108% utilización en cuenta cerrada. Contradicción más absurda del reporte. Si sobrevive: pago-por-eliminación.",impact:"+20 a +40 pts",letters:["07_Furnisher_Bank_of_America.pdf","01_Bureau_TransUnion_MOV_Demand.pdf","01_Bureau_Equifax_MOV_Demand.pdf"]}
+];
+
+const LETTER_JOBS = [
+  {num:1,target:"Equifax MOV - 9 items",status:"draft"},
+  {num:2,target:"Experian MOV - 10 items",status:"draft"},
+  {num:3,target:"TransUnion MOV - 8 items",status:"draft"},
+  {num:4,target:"LVNV Funding ($1,088 + $645)",status:"draft"},
+  {num:5,target:"Midland Credit ($888 + $433)",status:"draft"},
+  {num:6,target:"Southwest Credit / Comcast ($866)",status:"draft"},
+  {num:7,target:"Spring Oaks Capital ($634)",status:"draft"},
+  {num:8,target:"Caine & Weiner ($398)",status:"draft"},
+  {num:9,target:"Bank of America ($538)",status:"draft"}
+];
+
+const TRACKING_TEMPLATE = [
+  {letter:"01",desc:"Equifax MOV"},
+  {letter:"02",desc:"Experian MOV"},
+  {letter:"03",desc:"TransUnion MOV"},
+  {letter:"04",desc:"LVNV Funding"},
+  {letter:"05",desc:"Midland Credit"},
+  {letter:"06",desc:"SW Credit / Comcast"},
+  {letter:"07",desc:"Spring Oaks"},
+  {letter:"08",desc:"Caine & Weiner"},
+  {letter:"09",desc:"Bank of America"}
+];
+
 // ==================== DECISIONS ====================
 function renderDecisionTree() {
   const decisions = [
-    {q:"La agencia ELIMINA el item",a:[{t:"good",x:"Pide un reporte nuevo en 2 semanas para confirmar. Guarda la carta de eliminaci\u00f3n como registro permanente."},{t:"warn",x:"Revisa en 6 meses - a veces los items eliminados reaparecen."}]},
-    {q:"La agencia dice 'VERIFICADO' (no eliminado)",a:[{t:"warn",x:"Env\u00eda carta de M\u00e9todo de Verificaci\u00f3n (MOV) dentro de 5 d\u00edas h\u00e1biles."},{t:"warn",x:"Exige: QU\u00c9 procedimiento usaron, QUI\u00c9N contactaron, QU\u00c9 documentos revisaron."},{t:"bad",x:"No aceptes 'e-OSCAR' como respuesta adecuada - no es un procedimiento razonable bajo FCRA."}]},
-    {q:"La agencia PIERDE el plazo de 30 d\u00edas",a:[{t:"good",x:"DEBEN eliminar el item bajo FCRA 1681i(a)(1)."},{t:"warn",x:"Env\u00eda carta de 'Falta de Investigaci\u00f3n' inmediatamente."},{t:"warn",x:"Si no lo eliminan en 15 d\u00edas m\u00e1s, presenta queja CFPB."}]},
-    {q:"Respuesta MOV dice 'e-OSCAR' o es vaga",a:[{t:"bad",x:"No es adecuado bajo 1681i(a)(7)."},{t:"warn",x:"Env\u00eda carta de escalaci\u00f3n + amenaza de queja CFPB si no eliminan en 15 d\u00edas."}]},
-    {q:"El item REAPARECE despu\u00e9s de eliminado",a:[{t:"bad",x:"Violaci\u00f3n de FCRA 1681i(a)(5)(B). Debieron notificarte ANTES de reinsertarlo."},{t:"warn",x:"Env\u00eda carta de 'Reinserci\u00f3n Sin Aviso' + queja CFPB."}]},
-    {q:"LVNV/Midland no eliminan",a:[{t:"warn",x:"Negocia pago-por-eliminaci\u00f3n: ofrece 30-50% (~$500-$800)."},{t:"warn",x:"Obt\u00e9n acuerdo POR ESCRITO antes de pagar."},{t:"bad",x:"Si todo falla: consulta abogado FCRA (trabajan a contingencia)."}]},
-    {q:"Caine & Weiner / SW Credit no validan deuda",a:[{t:"good",x:"No pueden reportar lo que no pueden validar (FDCPA 809)."},{t:"warn",x:"Usa el hecho de que los 3 bur\u00f3s lo reportan diferente."},{t:"warn",x:"Env\u00eda carta de cese de comunicaci\u00f3n FDCPA si el acoso contin\u00faa."}]},
+    {q:"La agencia ELIMINA el item",a:[{t:"good",x:"Pide un reporte nuevo en 2 semanas para confirmar. Guarda la carta de eliminación como registro permanente."},{t:"warn",x:"Revisa en 6 meses - a veces los items eliminados reaparecen."}]},
+    {q:"La agencia dice 'VERIFICADO' (no eliminado)",a:[{t:"warn",x:"Envía carta de Método de Verificación (MOV) dentro de 5 días hábiles."},{t:"warn",x:"Exige: QUÉ procedimiento usaron, QUIÉN contactaron, QUÉ documentos revisaron."},{t:"bad",x:"No aceptes 'e-OSCAR' como respuesta adecuada - no es un procedimiento razonable bajo FCRA."}]},
+    {q:"La agencia PIERDE el plazo de 30 días",a:[{t:"good",x:"DEBEN eliminar el item bajo FCRA 1681i(a)(1)."},{t:"warn",x:"Envía carta de 'Falta de Investigación' inmediatamente."},{t:"warn",x:"Si no lo eliminan en 15 días más, presenta queja CFPB."}]},
+    {q:"Respuesta MOV dice 'e-OSCAR' o es vaga",a:[{t:"bad",x:"No es adecuado bajo 1681i(a)(7)."},{t:"warn",x:"Envía carta de escalación + amenaza de queja CFPB si no eliminan en 15 días."}]},
+    {q:"El item REAPARECE después de eliminado",a:[{t:"bad",x:"Violación de FCRA 1681i(a)(5)(B). Debieron notificarte ANTES de reinsertarlo."},{t:"warn",x:"Envía carta de 'Reinserción Sin Aviso' + queja CFPB."}]},
+    {q:"LVNV/Midland no eliminan",a:[{t:"warn",x:"Negocia pago-por-eliminación: ofrece 30-50% (~$500-$800)."},{t:"warn",x:"Obtén acuerdo POR ESCRITO antes de pagar."},{t:"bad",x:"Si todo falla: consulta abogado FCRA (trabajan a contingencia)."}]},
+    {q:"Caine & Weiner / SW Credit no validan deuda",a:[{t:"good",x:"No pueden reportar lo que no pueden validar (FDCPA 809)."},{t:"warn",x:"Usa el hecho de que los 3 burós lo reportan diferente."},{t:"warn",x:"Envía carta de cese de comunicación FDCPA si el acoso continúa."}]},
     {q:"Spring Oaks no elimina a pesar de fecha imposible",a:[{t:"good",x:"La evidencia es irrefutable - fecha de actividad PRECEDE apertura por 16 meses."},{t:"warn",x:"Si no eliminan, CFPB + NJ Division of Consumer Affairs de inmediato."}]},
-    {q:"Nada funciona despu\u00e9s de 90+ d\u00edas",a:[{t:"bad",x:"Consulta abogado FCRA (muchos trabajan a contingencia)."},{t:"warn",x:"Documenta TODO: cartas, recibos, respuestas, llamadas."},{t:"warn",x:"Violaciones FCRA: $100-$1,000 por violaci\u00f3n + honorarios de abogado."}]}
+    {q:"Nada funciona después de 90+ días",a:[{t:"bad",x:"Consulta abogado FCRA (muchos trabajan a contingencia)."},{t:"warn",x:"Documenta TODO: cartas, recibos, respuestas, llamadas."},{t:"warn",x:"Violaciones FCRA: $100-$1,000 por violación + honorarios de abogado."}]}
   ];
   const el = document.getElementById('decisionTree');
   if (!el) return;
@@ -560,29 +790,54 @@ function switchTab(id,el){
   document.getElementById('tab-'+id).classList.add('active');
   if(el)el.classList.add('active');
 }
-function toggleCheck(id){DB.save(id,!DB.load(id,false));render();}
-function togglePhase(id){DB.save('expand-'+id,!DB.load('expand-'+id,false));render();}
-function updateLSW(n,v){DB.save('lsw-'+n,v);}
-function updateTrk(l,f,v){DB.save('trk-'+l+'-'+f,v);}
-function exportData(){
-  const data={};
-  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('kfs_'))data[k]=localStorage.getItem(k);}
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='kfs-cesar-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+
+async function toggleCheck(id){
+  const checked = !appState.checklist[id];
+  await saveChecklistItem(id, checked);
 }
-function importData(){document.getElementById('importFile').click();}
-function handleImport(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(ev){
-    try{const data=JSON.parse(ev.target.result);Object.entries(data).forEach(([k,v])=>localStorage.setItem(k,v));alert('Datos importados exitosamente!');render();}catch(e){alert('Formato inv\u00e1lido');}
-  };
-  reader.readAsText(file);
+
+async function togglePhase(id){
+  const expanded = !appState.checklist['_expand_'+id];
+  appState.checklist['_expand_'+id] = expanded;
+  render();
+}
+
+async function updateLSW(n,v){
+  appState.letterJobs.forEach(j=>{if(j.job_num===n)j.status=v;});
+  render();
+  saveLetterJob(n,v);
+}
+
+async function updateTrk(l,f,v){
+  await saveTracking(l,f,v);
+  render();
 }
 
 // ==================== INIT ====================
-render();
+async function init() {
+  // Handle hash fragment from magic link redirect
+  if (window.location.hash && (window.location.hash.includes('access_token') || window.location.hash.includes('type=magiclink'))) {
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (session) {
+      await loadDashboardData(session.user.email);
+      return;
+    }
+  }
+
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session) {
+    await loadDashboardData(session.user.email);
+  }
+  _supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      await loadDashboardData(session.user.email);
+    } else if (event === 'SIGNED_OUT') {
+      showLogin();
+    }
+  });
+}
+
+init();
 </script>
 </body>
 </html>
